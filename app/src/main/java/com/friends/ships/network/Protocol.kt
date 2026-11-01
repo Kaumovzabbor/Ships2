@@ -15,7 +15,7 @@ data class PlayerInfo(
 /**
  * Bitta umumiy xabar turi (har qator = bitta JSON).
  * t: JOIN, WELCOME, REJECT, LOBBY, ADDBOT, START, PLACE, READY, FLEET, BATTLE,
- *    FIRE, RESULT, LEFT, REMATCH, DISCONNECTED (faqat mahalliy)
+ *    FIRE, RESULT, LEFT, REMATCH, SETTINGS, DISCONNECTED (faqat mahalliy)
  */
 @Serializable
 data class Msg(
@@ -32,6 +32,12 @@ data class Msg(
     val winner: Int = -1,
     val text: String = "",
     val secs: Int = 0,
+    val around: List<Int> = emptyList(),
+    // host sozlamalari (LOBBY/WELCOME/PLACE/BATTLE xabarlarida, SETTINGS da host yuboradi)
+    val fleetType: String = "CLASSIC", // CLASSIC | RUSSIAN
+    val noTouch: Boolean = false,
+    val extra: Boolean = true,
+    val timer: Int = 30, // 0 = o'chiq
 )
 
 val json = Json {

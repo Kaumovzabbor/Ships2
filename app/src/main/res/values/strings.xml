@@ -17,7 +17,7 @@
     <string name="join_manual">Host IP manzili</string>
     <string name="join_connect">Ulanish</string>
     <string name="place_title">Kemalaringizni joylashtiring</string>
-    <string name="place_hint">Katakka bosing: kema joylashadi. Joylashgan kemaga bossangiz, olib tashlanadi.</string>
+    <string name="place_hint">Kemani bosib turib sudrang. Bir marta bossangiz, aylanadi.</string>
     <string name="place_dir_h">Yo\'nalish: gorizontal</string>
     <string name="place_dir_v">Yo\'nalish: vertikal</string>
     <string name="place_random">Tasodifiy</string>
@@ -46,4 +46,28 @@
     <string name="err_host_left">Host uzildi</string>
     <string name="err_name_empty">Ismingizni kiriting</string>
     <string name="howto_text">1. Hamma bir xil Wi-Fi yoki bitta telefonning hotspotiga ulanadi.\n2. Bitta o\'yinchi \"Xona yaratish\"ni bosadi, qolganlar \"Xonaga qo\'shilish\"ni bosib xonani tanlaydi (yoki host IP manzilini kiritadi).\n3. Hamma 5, 4, 3, 3 va 2 kataklik kemalarini 10x10 maydonga joylashtiradi.\n4. Navbat bilan raqib maydonidagi katakni tanlab \"Otish!\"ni bosasiz. Urgan bo\'lsangiz, yana otasiz.\n5. Kemaning barcha kataklari urilsa, u cho\'kadi. Barcha kemalari cho\'kkan o\'yinchi chiqib ketadi.\n6. Oxirgi qolgan o\'yinchi g\'olib bo\'ladi. 30 soniya ichida otmasangiz, tasodifiy katakka otiladi.</string>
+    <string name="home_solo">Bot bilan mashq</string>
+    <string name="home_settings">Sozlamalar</string>
+    <string name="set_title">Sozlamalar</string>
+    <string name="set_sound">Ovoz</string>
+    <string name="set_vibration">Tebranish</string>
+    <string name="set_theme">Mavzu</string>
+    <string name="theme_system">Tizim</string>
+    <string name="theme_light">Och</string>
+    <string name="theme_dark">To\'q</string>
+    <string name="set_language">Til</string>
+    <string name="lang_system">Tizim tili</string>
+    <string name="lang_uz">O\'zbekcha</string>
+    <string name="lang_ru">Русский</string>
+    <string name="lang_en">English</string>
+    <string name="rules_title">O\'yin qoidalari</string>
+    <string name="fleet_classic">Klassik (5-4-3-3-2)</string>
+    <string name="fleet_russian">Rus (10 kema)</string>
+    <string name="rule_notouch">Kemalar bir-biriga tegmaydi</string>
+    <string name="rule_extra">Urgan yana otadi</string>
+    <string name="rule_timer">Navbat vaqti</string>
+    <string name="timer_off">Cheksiz</string>
+    <string name="timer_fmt">%1$d s</string>
+    <string name="place_notouch_hint">Kemalar bir-biriga (burchakda ham) tegmasligi kerak.</string>
+    <string name="battle_remaining">Qolgan kemalar</string>
 </resources>

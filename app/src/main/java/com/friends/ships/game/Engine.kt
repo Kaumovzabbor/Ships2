@@ -3,6 +3,7 @@ package com.friends.ships.game
 class FireOutcome(
     val result: String, // MISS, HIT, SUNK
     val sunk: List<Int>,
+    val around: List<Int>, // SUNK bo'lsa va markAround yoqilgan bo'lsa: kema atrofidagi suv kataklari
     val next: Int,
     val winner: Int,
     val eliminated: Boolean,
@@ -13,6 +14,7 @@ class Engine(
     val order: List<Int>,
     private val fleets: Map<Int, List<List<Int>>>,
     private val extraTurn: Boolean = true,
+    private val markAround: Boolean = false,
 ) {
     private val shots: Map<Int, MutableSet<Int>> = order.associateWith { HashSet<Int>() }
     private val aliveList = order.toMutableList()
@@ -38,11 +40,16 @@ class Engine(
         val ship = fleets.getValue(target).firstOrNull { cell in it }
         var res = "MISS"
         var sunk = emptyList<Int>()
+        var ring = emptyList<Int>()
         var eliminated = false
         if (ship != null) {
             if (ship.all { it in got }) {
                 res = "SUNK"
                 sunk = ship
+                if (markAround) {
+                    ring = around(ship).filter { it !in got }
+                    got.addAll(ring)
+                }
                 if (fleets.getValue(target).all { s -> s.all { it in got } }) {
                     eliminated = true
                     aliveList.remove(target)
@@ -53,7 +60,7 @@ class Engine(
         }
         val win = winner()
         if (win == -1 && !(extraTurn && ship != null)) advance()
-        return FireOutcome(res, sunk, current, win, eliminated)
+        return FireOutcome(res, sunk, ring, current, win, eliminated)
     }
 
     fun advance() {

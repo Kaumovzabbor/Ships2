@@ -2,6 +2,7 @@ package com.friends.ships.network
 
 import com.friends.ships.game.Engine
 import com.friends.ships.game.SIZE
+import com.friends.ships.game.fleetSizes
 import com.friends.ships.game.isValidFleet
 import com.friends.ships.game.randomFleet
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +23,6 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
 
     companion object {
         const val DEFAULT_PORT = 8765
-        const val TURN_SECS = 30
         const val PLACE_SECS = 90
         const val MAX_PLAYERS = 6
     }
@@ -53,6 +53,17 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
         var fleet: List<List<Int>>? = null
         var alive = true
     }
+
+    private class Cfg(
+        var fleet: String = "CLASSIC",
+        var noTouch: Boolean = false,
+        var extra: Boolean = true,
+        var timer: Int = 30,
+    )
+
+    private val cfg = Cfg()
+    private fun withCfg(m: Msg) = m.copy(fleetType = cfg.fleet, noTouch = cfg.noTouch, extra = cfg.extra, timer = cfg.timer)
+    private fun sizes() = fleetSizes(cfg.fleet)
 
     private val lock = Any()
     private val players = LinkedHashMap<Int, P>()
@@ -126,7 +137,7 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
 
     private fun infos() = players.values.map { PlayerInfo(it.id, it.name, it.ready, it.alive, it.bot) }
 
-    private fun broadcast(m: Msg) = players.values.forEach { it.conn?.send(m) }
+    private fun broadcast(m: Msg) = withCfg(m).let { x -> players.values.forEach { it.conn?.send(x) } }
 
     private fun join(name: String, conn: Conn, loopback: Boolean): Int = synchronized(lock) {
         val reject = when {
@@ -142,7 +153,7 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
         val id = nextId++
         if (loopback && hostId == -1) hostId = id
         players[id] = P(id, name, conn, false)
-        conn.send(Msg("WELCOME", id = id, players = infos()))
+        conn.send(withCfg(Msg("WELCOME", id = id, players = infos())))
         broadcast(Msg("LOBBY", players = infos()))
         id
     }
@@ -157,9 +168,17 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
                 broadcast(Msg("LOBBY", players = infos()))
             }
 
+            "SETTINGS" -> if (id == hostId && phase == "LOBBY") {
+                cfg.fleet = if (m.fleetType == "RUSSIAN") "RUSSIAN" else "CLASSIC"
+                cfg.noTouch = m.noTouch || cfg.fleet == "RUSSIAN"
+                cfg.extra = m.extra
+                cfg.timer = if (m.timer in listOf(0, 15, 30, 60)) m.timer else 30
+                broadcast(Msg("LOBBY", players = infos()))
+            }
+
             "START" -> if (id == hostId && phase == "LOBBY" && players.size >= 2) startPlacement()
 
-            "READY" -> if (phase == "PLACE" && !p.ready && isValidFleet(m.fleet)) {
+            "READY" -> if (phase == "PLACE" && !p.ready && isValidFleet(m.fleet, sizes(), cfg.noTouch)) {
                 p.fleet = m.fleet
                 p.ready = true
                 broadcast(Msg("LOBBY", players = infos()))
@@ -185,7 +204,7 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
         phase = "PLACE"
         players.values.forEach {
             it.ready = it.bot
-            it.fleet = if (it.bot) randomFleet() else null
+            it.fleet = if (it.bot) randomFleet(sizes(), cfg.noTouch) else null
             it.alive = true
         }
         broadcast(Msg("PLACE", secs = PLACE_SECS, players = infos()))
@@ -195,7 +214,7 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
             synchronized(lock) {
                 if (phase == "PLACE") {
                     players.values.filter { !it.ready }.forEach {
-                        val f = randomFleet()
+                        val f = randomFleet(sizes(), cfg.noTouch)
                         it.fleet = f
                         it.ready = true
                         it.conn?.send(Msg("FLEET", fleet = f))
@@ -211,9 +230,9 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
         phase = "BATTLE"
         lastHit.clear()
         players.values.forEach { it.alive = true }
-        val e = Engine(players.keys.toList(), players.values.associate { it.id to it.fleet!! }, true)
+        val e = Engine(players.keys.toList(), players.values.associate { it.id to it.fleet!! }, cfg.extra, cfg.noTouch)
         engine = e
-        broadcast(Msg("BATTLE", turn = e.current, secs = TURN_SECS, players = infos()))
+        broadcast(Msg("BATTLE", turn = e.current, secs = cfg.timer, players = infos()))
         scheduleTurn()
     }
 
@@ -249,7 +268,7 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
         broadcast(
             Msg(
                 "RESULT", id = shooter, target = target, cell = cell, res = o.result,
-                sunk = o.sunk, turn = o.next, winner = o.winner, secs = TURN_SECS, players = infos(),
+                sunk = o.sunk, around = o.around, turn = o.next, winner = o.winner, secs = cfg.timer, players = infos(),
             ),
         )
         if (o.winner != -1) {
@@ -265,8 +284,9 @@ class GameServer(private val scope: CoroutineScope, private val port: Int = DEFA
         turnJob?.cancel()
         val cur = e.current
         val bot = players[cur]?.bot == true
+        if (!bot && cfg.timer == 0) return
         turnJob = scope.launch {
-            delay(if (bot) 900L else TURN_SECS * 1000L)
+            delay(if (bot) 900L else cfg.timer * 1000L)
             synchronized(lock) {
                 if (engine === e && e.current == cur && phase == "BATTLE") {
                     pickShot(cur)?.let { doFire(cur, it.first, it.second) }

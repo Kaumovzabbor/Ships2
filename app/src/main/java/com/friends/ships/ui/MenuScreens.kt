@@ -1,5 +1,6 @@
 package com.friends.ships.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -14,10 +15,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -61,12 +64,12 @@ fun NameField(s: UiState, vm: GameViewModel) {
 
 @Composable
 fun HomeScreen(s: UiState, vm: GameViewModel) = Page {
-    Spacer(Modifier.height(40.dp))
+    Spacer(Modifier.height(32.dp))
     Text("Ships", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(12.dp))
     NameField(s, vm)
     ErrorText(s)
-    Button(onClick = vm::createRoom, enabled = !s.busy, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+    Button(onClick = { vm.createRoom() }, enabled = !s.busy, modifier = Modifier.fillMaxWidth().height(56.dp)) {
         Text(stringResource(R.string.home_create))
     }
     Button(
@@ -74,8 +77,16 @@ fun HomeScreen(s: UiState, vm: GameViewModel) = Page {
         enabled = !s.busy,
         modifier = Modifier.fillMaxWidth().height(56.dp),
     ) { Text(stringResource(R.string.home_join)) }
-    OutlinedButton(onClick = { vm.go(Screen.HOWTO) }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+    OutlinedButton(
+        onClick = { vm.createRoom(solo = true) },
+        enabled = !s.busy,
+        modifier = Modifier.fillMaxWidth().height(52.dp),
+    ) { Text(stringResource(R.string.home_solo)) }
+    OutlinedButton(onClick = { vm.go(Screen.HOWTO) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
         Text(stringResource(R.string.home_howto))
+    }
+    OutlinedButton(onClick = { vm.go(Screen.SETTINGS) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+        Text(stringResource(R.string.home_settings))
     }
 }
 
@@ -85,6 +96,48 @@ fun HowToScreen(vm: GameViewModel) = Page {
         Text(stringResource(R.string.home_howto), fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         Text(stringResource(R.string.howto_text), lineHeight = 24.sp)
+    }
+    Button(onClick = { vm.go(Screen.HOME) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.back)) }
+}
+
+@Composable
+private fun ChipRow(content: @Composable () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) { content() }
+}
+
+@Composable
+private fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label)
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+    }
+}
+
+@Composable
+fun SettingsScreen(s: UiState, vm: GameViewModel) = Page {
+    Column(
+        Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(stringResource(R.string.set_title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        SwitchRow(stringResource(R.string.set_sound), s.sound) { vm.setSound(it) }
+        SwitchRow(stringResource(R.string.set_vibration), s.vibration) { vm.setVibration(it) }
+        Text(stringResource(R.string.set_theme))
+        ChipRow {
+            listOf(0 to R.string.theme_system, 1 to R.string.theme_light, 2 to R.string.theme_dark).forEach { (v, label) ->
+                FilterChip(selected = s.theme == v, onClick = { vm.setTheme(v) }, label = { Text(stringResource(label)) })
+            }
+        }
+        Text(stringResource(R.string.set_language))
+        ChipRow {
+            listOf("" to R.string.lang_system, "uz" to R.string.lang_uz, "ru" to R.string.lang_ru, "en" to R.string.lang_en)
+                .forEach { (v, label) ->
+                    FilterChip(selected = s.lang == v, onClick = { vm.setLang(v) }, label = { Text(stringResource(label)) })
+                }
+        }
     }
     Button(onClick = { vm.go(Screen.HOME) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.back)) }
 }
@@ -126,17 +179,59 @@ fun JoinScreen(s: UiState, vm: GameViewModel) = Page {
     }
 }
 
+/** Host qoidalarni o'zgartiradi, boshqalar faqat ko'radi. */
+@Composable
+private fun RulesCard(s: UiState, vm: GameViewModel) {
+    val host = s.isHost
+    val russian = s.fleetType == "RUSSIAN"
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.rules_title), fontWeight = FontWeight.Bold)
+        ChipRow {
+            FilterChip(
+                selected = !russian, enabled = host,
+                onClick = { vm.sendSettings("CLASSIC", s.noTouch, s.extra, s.timer) },
+                label = { Text(stringResource(R.string.fleet_classic)) },
+            )
+            FilterChip(
+                selected = russian, enabled = host,
+                onClick = { vm.sendSettings("RUSSIAN", true, true, s.timer) },
+                label = { Text(stringResource(R.string.fleet_russian)) },
+            )
+        }
+        SwitchRow(stringResource(R.string.rule_notouch), s.noTouch, enabled = host && !russian) {
+            vm.sendSettings(s.fleetType, it, s.extra, s.timer)
+        }
+        SwitchRow(stringResource(R.string.rule_extra), s.extra, enabled = host) {
+            vm.sendSettings(s.fleetType, s.noTouch, it, s.timer)
+        }
+        Text(stringResource(R.string.rule_timer))
+        ChipRow {
+            listOf(0, 15, 30, 60).forEach { t ->
+                FilterChip(
+                    selected = s.timer == t, enabled = host,
+                    onClick = { vm.sendSettings(s.fleetType, s.noTouch, s.extra, t) },
+                    label = { Text(if (t == 0) stringResource(R.string.timer_off) else stringResource(R.string.timer_fmt, t)) },
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun LobbyScreen(s: UiState, vm: GameViewModel) = Page {
     Text(stringResource(R.string.lobby_title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
     if (s.isHost) Text(stringResource(R.string.lobby_addr, s.hostIp, GameServer.DEFAULT_PORT))
-    Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(
+        Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         s.players.forEach { p ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(p.name + if (p.id == s.myId) " ★" else "", fontSize = 18.sp)
                 if (p.bot) Text("BOT")
             }
         }
+        RulesCard(s, vm)
     }
     if (s.isHost) {
         if (s.players.size < 2) Text(stringResource(R.string.lobby_need))
