@@ -34,8 +34,16 @@ yoki lobbidagi IP manzilni qo'lda kiritadi (port 8765). Yolg'iz sinash uchun lob
 | LEFT | host→hamma | o'yinchi chiqib ketdi |
 | REMATCH | mijoz→host, host→hamma | lobbiga qaytish |
 
-## Qoidalar
-5-4-3-3-2 kemalar, urgan yana otadi, 30 s navbat taymeri (tugasa tasodifiy otiladi), barcha kemasi cho'kkan o'yinchi chiqadi, oxirgi qolgan g'olib.
+## Qoidalar (host lobbida tanlaydi)
+- **Klassik (Hasbro):** 5-4-3-3-2 kemalar.
+- **Rus "Морской бой":** 1x4, 2x3, 3x2, 4x1 (10 kema), kemalar burchakda ham tegmaydi, urgan yana otadi.
+- Alohida sozlamalar: "tegmaslik", "urgan yana otadi", navbat vaqti (cheksiz / 15 / 30 / 60 s).
+- Kema cho'ksa va "tegmaslik" yoqilgan bo'lsa, atrofidagi suv avtomatik belgilanadi.
+- Barcha kemasi cho'kkan o'yinchi chiqadi, oxirgi qolgan g'olib.
 
-## Hozircha yo'q (keyingi versiya)
-Qayta ulanish (reconnect), heartbeat, sozlamalar ekrani (ovoz/til tanlash — til telefon tiliga qarab avtomatik), "no touching" sozlamasi UI'da, animatsiyalar va ovozlar.
+## Imkoniyatlar
+Kemalarni sudrab joylashtirish (bosib aylantirish), qolgan kemalar ko'rsatkichi, o'q animatsiyasi,
+ovoz va tebranish, och/to'q mavzu, til tanlash (O'zbekcha, Русский, English), bot bilan mashq.
+
+## Hozircha yo'q
+Qayta ulanish (reconnect) va heartbeat.
